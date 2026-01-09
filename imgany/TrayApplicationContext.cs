@@ -103,7 +103,6 @@ namespace imgany
                     var item = new ToolStripMenuItem($"{alias} ({path})");
                     item.Click += (sender, args) => {
                         _config.AutoSavePath = path;
-                        _trayIcon.ShowBalloonTip(1000, "路径更新", $"已切换保存位置至: {alias}", ToolTipIcon.Info);
                     };
                     // Optional: Check current path?
                     if (_config.AutoSavePath == path) item.Checked = true;
