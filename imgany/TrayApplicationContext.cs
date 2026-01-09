@@ -61,7 +61,7 @@ namespace imgany
             _contextMenu.Items.Add("设置", null, OnSettings);
             _contextMenu.Items.Add(new ToolStripSeparator());
             
-            _autoSaveMenuItem = new ToolStripMenuItem("自动保存");
+            _autoSaveMenuItem = new ToolStripMenuItem("自动模式");
             _autoSaveMenuItem.CheckOnClick = true;
             _autoSaveMenuItem.Checked = _config.AutoSave;
             _autoSaveMenuItem.Click += (s, e) => {
