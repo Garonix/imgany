@@ -2,7 +2,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace WindowsClipboardTool.Core
+namespace imgany.Core
 {
     public static class NativeMethods
     {

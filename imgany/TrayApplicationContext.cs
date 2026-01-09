@@ -1,9 +1,10 @@
+using imgany.Core;
 using System;
 using System.Drawing;
 using System.Windows.Forms;
-using WindowsClipboardTool.Core;
+using imgany.UI;
 
-namespace WindowsClipboardTool
+namespace imgany
 {
     public class TrayApplicationContext : ApplicationContext
     {

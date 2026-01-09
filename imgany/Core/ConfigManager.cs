@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Text.Json;
 
-namespace WindowsClipboardTool.Core
+namespace imgany.Core
 {
     public class AppConfig
     {
@@ -20,7 +20,7 @@ namespace WindowsClipboardTool.Core
         public ConfigManager()
         {
             string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            string folder = Path.Combine(appData, "WindowsClipboardTool");
+            string folder = Path.Combine(appData, "imgany");
             if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
             _configPath = Path.Combine(folder, "config.json");
             Load();

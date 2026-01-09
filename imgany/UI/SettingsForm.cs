@@ -1,9 +1,9 @@
+using imgany.Core;
 using System;
 using System.Drawing;
 using System.Windows.Forms;
-using WindowsClipboardTool.Core;
 
-namespace WindowsClipboardTool
+namespace imgany.UI
 {
     public class SettingsForm : Form
     {

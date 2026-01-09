@@ -1,7 +1,7 @@
 using System;
 using System.Windows.Forms;
 
-namespace WindowsClipboardTool
+namespace imgany
 {
     static class Program
     {

@@ -5,11 +5,11 @@ using System.IO;
 using System.Security.Principal;
 using System.Windows.Forms;
 
-namespace WindowsClipboardTool.Core
+namespace imgany.Core
 {
     public static class TaskSchedulerManager
     {
-        private const string TaskName = "WindowsClipboardTool_AutoStart";
+        private const string TaskName = "imgany_AutoStart";
 
         public static bool IsTaskRegistered()
         {

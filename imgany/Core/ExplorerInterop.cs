@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Text;
 
-namespace WindowsClipboardTool.Core
+namespace imgany.Core
 {
     public static class ExplorerInterop
     {

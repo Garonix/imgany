@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace WindowsClipboardTool.Core
+namespace imgany.Core
 {
     public class ClipboardService
     {

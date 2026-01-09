@@ -1,4 +1,4 @@
-﻿namespace WindowsClipboardTool;
+﻿namespace imgany;
 
 partial class Form1
 {

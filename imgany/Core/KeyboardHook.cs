@@ -5,7 +5,7 @@ using System.Windows.Forms;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace WindowsClipboardTool.Core
+namespace imgany.Core
 {
     public class KeyboardHook : IDisposable
     {
