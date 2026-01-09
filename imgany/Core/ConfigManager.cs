@@ -2,6 +2,8 @@ using System;
 using System.IO;
 using System.Text.Json;
 
+using System.Collections.Generic;
+
 namespace imgany.Core
 {
     public class AppConfig
@@ -10,16 +12,22 @@ namespace imgany.Core
         public bool AutoSave { get; set; } = false;
         public string AutoSavePath { get; set; } = "";
         
+        // Dictionary<Alias, Path>
+        public Dictionary<string, string> FavoritePaths { get; set; } = new Dictionary<string, string>();
+        
         public bool UploadToHost { get; set; } = false;
 
-        public string UploadHostType { get; set; } = "Lsky Pro";
+        public string UploadHostType { get; set; } = "Lsky Pro (兰空图床)";
         public string UploadHostUrl { get; set; } = "";
         
         public bool UploadAsGuest { get; set; } = false;
         public string UploadEmail { get; set; } = ""; // Encrypted? Storage in plain json for MVP. User aware.
         public string UploadPassword { get; set; } = "";
-        public string UploadToken { get; set; } = ""; // Cache
+        public string UploadToken { get; set; } = ""; // Internal Cache
         
+        // Feature: Upload Only (Skip Auto Save)
+        public bool UploadOnly { get; set; } = false;
+
         public bool EnableUploadNotification { get; set; } = true;
     }
 
@@ -30,10 +38,9 @@ namespace imgany.Core
 
         public ConfigManager()
         {
-            string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            string folder = Path.Combine(appData, "imgany");
-            if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
-            _configPath = Path.Combine(folder, "config.json");
+            // Portable Mode: Use Base Directory (Exe location)
+            string appDir = AppContext.BaseDirectory;
+            _configPath = Path.Combine(appDir, "config.json");
             Load();
         }
 
@@ -112,6 +119,18 @@ namespace imgany.Core
         {
             get => _config.EnableUploadNotification;
             set { _config.EnableUploadNotification = value; Save(); }
+        }
+
+        public bool UploadOnly
+        {
+            get => _config.UploadOnly;
+            set { _config.UploadOnly = value; Save(); }
+        }
+
+        public Dictionary<string, string> FavoritePaths
+        {
+            get => _config.FavoritePaths ?? new Dictionary<string, string>();
+            set { _config.FavoritePaths = value; Save(); }
         }
 
         private void Load()

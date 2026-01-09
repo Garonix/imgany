@@ -36,6 +36,8 @@ namespace imgany
 
         private ClipboardMessageWindow _messageWindow;
         private ToolStripMenuItem _autoSaveMenuItem;
+        private ToolStripMenuItem _uploadMenuItem;
+        private ToolStripMenuItem _favoritesMenuItem;
 
         private Icon _iconNormal;
         private Icon _iconSuccess;
@@ -70,7 +72,54 @@ namespace imgany
                  _config.AutoSave = _autoSaveMenuItem.Checked; 
             };
             _contextMenu.Items.Add(_autoSaveMenuItem);
+
+            // New: Upload Toggle
+            _uploadMenuItem = new ToolStripMenuItem("启用图床上传");
+            _uploadMenuItem.CheckOnClick = true;
+            _uploadMenuItem.Checked = _config.UploadToHost;
+            _uploadMenuItem.Click += (s, e) => {
+                 _config.UploadToHost = _uploadMenuItem.Checked;
+            };
+            _contextMenu.Items.Add(_uploadMenuItem);
+
+            // New: Favorite Paths Submenu (Dynamic)
+            _favoritesMenuItem = new ToolStripMenuItem("常用位置");
+            _favoritesMenuItem.Visible = _config.AutoSave; // Initial state
+            _favoritesMenuItem.DropDownOpening += (s, e) => {
+                _favoritesMenuItem.DropDownItems.Clear();
+                // If we are visible, AutoSave is presumably true due to Opening event Sync.
+                // But double check doesn't hurt, or just skip.
+
+                if (_config.FavoritePaths.Count == 0)
+                {
+                    _favoritesMenuItem.DropDownItems.Add(new ToolStripMenuItem("无常用位置") { Enabled = false });
+                    return;
+                }
+
+                foreach (var kvp in _config.FavoritePaths)
+                {
+                    string alias = kvp.Key;
+                    string path = kvp.Value;
+                    var item = new ToolStripMenuItem($"{alias} ({path})");
+                    item.Click += (sender, args) => {
+                        _config.AutoSavePath = path;
+                        _trayIcon.ShowBalloonTip(1000, "路径更新", $"已切换保存位置至: {alias}", ToolTipIcon.Info);
+                    };
+                    // Optional: Check current path?
+                    if (_config.AutoSavePath == path) item.Checked = true;
+                    
+                    _favoritesMenuItem.DropDownItems.Add(item);
+                }
+            };
+            _contextMenu.Items.Add(_favoritesMenuItem);
             
+            _contextMenu.Opening += (s, e) => {
+                 _favoritesMenuItem.Visible = _config.AutoSave;
+                 _autoSaveMenuItem.Checked = _config.AutoSave;
+                 _uploadMenuItem.Checked = _config.UploadToHost;
+            };
+            
+            _contextMenu.Items.Add(new ToolStripSeparator());
             _contextMenu.Items.Add("退出", null, OnExit);
 
             _trayIcon = new NotifyIcon()
@@ -243,12 +292,14 @@ namespace imgany
                     try 
                     {
                         Clipboard.SetText(remoteUrl);
-                        if (_config.EnableUploadNotification)
-                        {
-                            _trayIcon.ShowBalloonTip(2000, "上传成功", "图片链接已复制到剪贴板", ToolTipIcon.Info);
-                        }
                     }
                     catch {}
+                    
+                    // Notification OUTSIDE try-catch to ensure it always fires
+                    if (_config.EnableUploadNotification)
+                    {
+                        _trayIcon.ShowBalloonTip(2000, "上传成功", "图片链接已复制到剪贴板", ToolTipIcon.Info);
+                    }
                 }
                 else if (_config.UploadToHost)
                 {
@@ -273,6 +324,14 @@ namespace imgany
         {
             if (_config.AutoSave && !string.IsNullOrEmpty(_config.AutoSavePath))
             {
+                // Validate path exists at runtime
+                if (!Directory.Exists(_config.AutoSavePath))
+                {
+                    _trayIcon.ShowBalloonTip(3000, "保存失败", $"路径不存在: {_config.AutoSavePath}", ToolTipIcon.Error);
+                    ShowFeedback(false);
+                    return;
+                }
+
                 // Feature 3: Auto Save (Optimized Parallel)
                 var (stream, fileName) = await _clipboard.GetClipboardImageStreamAsync(_config.FilePrefix);
                 
@@ -281,24 +340,39 @@ namespace imgany
                     byte[] data = stream.ToArray();
                     string fullPath = System.IO.Path.Combine(_config.AutoSavePath, fileName);
                     
-                    // Task 1: Disk Save
-                    var saveTask = Task.Run(async () => 
+                    Task saveTask;
+
+                    // Feature: Upload Only Mode
+                    if (_config.UploadOnly && _config.UploadToHost)
                     {
-                        await File.WriteAllBytesAsync(fullPath, data);
-                        // Note: Ignoring ensuring unique logic for speed here as timestamp is high precision.
-                        // Ideally should check exists.
-                    });
+                        // Skip local save, only log or do nothing for saveTask
+                        saveTask = Task.CompletedTask;
+                    }
+                    else
+                    {
+                        // Task 1: Disk Save
+                        saveTask = Task.Run(async () => 
+                        {
+                            try
+                            {
+                                await File.WriteAllBytesAsync(fullPath, data);
+                            }
+                            catch (Exception ex)
+                            {
+                                // Log error but don't crash
+                                System.Diagnostics.Debug.WriteLine($"Save failed: {ex.Message}");
+                            }
+                        });
+                    }
                     
                     // Task 2: Upload
                     if (_config.UploadToHost)
                     {
                         var uploadStream = new MemoryStream(data);
-                        // Fire and forget upload? Or wait for notification?
-                        // Auto mode usually implies valid notifications.
                         
                         string remoteUrl = await _uploader.UploadImageAsync(uploadStream, fileName);
                         
-                        // Wait for save to ensure cleaner logic regarding resources?
+                        // Wait for save (if any)
                         await saveTask; 
                         
                         if (!string.IsNullOrEmpty(remoteUrl))
@@ -306,12 +380,14 @@ namespace imgany
                             try 
                             {
                                 Clipboard.SetText(remoteUrl);
-                                if (_config.EnableUploadNotification)
-                                {
-                                    _trayIcon.ShowBalloonTip(2000, "自动上传成功", "图片链接已复制到剪贴板", ToolTipIcon.Info);
-                                }
                             }
                             catch {}
+                            
+                            // Notification OUTSIDE try-catch
+                            if (_config.EnableUploadNotification)
+                            {
+                                _trayIcon.ShowBalloonTip(2000, "自动上传成功", "图片链接已复制到剪贴板", ToolTipIcon.Info);
+                            }
                         }
                     }
                     else
@@ -330,6 +406,7 @@ namespace imgany
                 {
                     // Refresh configs
                     _autoSaveMenuItem.Checked = _config.AutoSave;
+                    _uploadMenuItem.Checked = _config.UploadToHost;
                 }
             }
         }

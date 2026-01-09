@@ -66,10 +66,8 @@ namespace imgany.Core
         {
             try
             {
-                string folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "imgany");
-                if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
-                
-                string path = Path.Combine(folder, "debug.log");
+                // Portable Mode: Log to Exe directory
+                string path = Path.Combine(AppContext.BaseDirectory, "debug.log");
                 File.AppendAllText(path, $"{DateTime.Now}: {message}{Environment.NewLine}");
             }
             catch (Exception ex)
