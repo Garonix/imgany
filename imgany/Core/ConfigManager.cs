@@ -9,7 +9,18 @@ namespace imgany.Core
         public string FilePrefix { get; set; } = "Img";
         public bool AutoSave { get; set; } = false;
         public string AutoSavePath { get; set; } = "";
-        public bool UploadToHost { get; set; } = false; // logic reserved
+        
+        public bool UploadToHost { get; set; } = false;
+
+        public string UploadHostType { get; set; } = "Lsky Pro";
+        public string UploadHostUrl { get; set; } = "";
+        
+        public bool UploadAsGuest { get; set; } = false;
+        public string UploadEmail { get; set; } = ""; // Encrypted? Storage in plain json for MVP. User aware.
+        public string UploadPassword { get; set; } = "";
+        public string UploadToken { get; set; } = ""; // Cache
+        
+        public bool EnableUploadNotification { get; set; } = true;
     }
 
     public class ConfigManager
@@ -59,6 +70,48 @@ namespace imgany.Core
         { 
             get => _config.UploadToHost; 
             set { _config.UploadToHost = value; Save(); }
+        }
+
+        public string UploadHostType
+        {
+            get => _config.UploadHostType ?? "Lsky Pro";
+            set { _config.UploadHostType = value; Save(); }
+        }
+
+        public string UploadHostUrl
+        {
+            get => _config.UploadHostUrl ?? "";
+            set { _config.UploadHostUrl = value; Save(); }
+        }
+
+        public bool UploadAsGuest
+        {
+            get => _config.UploadAsGuest;
+            set { _config.UploadAsGuest = value; Save(); }
+        }
+
+        public string UploadEmail
+        {
+            get => _config.UploadEmail ?? "";
+            set { _config.UploadEmail = value; Save(); }
+        }
+
+        public string UploadPassword
+        {
+            get => _config.UploadPassword ?? "";
+            set { _config.UploadPassword = value; Save(); }
+        }
+
+        public string UploadToken
+        {
+            get => _config.UploadToken ?? "";
+            set { _config.UploadToken = value; Save(); }
+        }
+
+        public bool EnableUploadNotification
+        {
+            get => _config.EnableUploadNotification;
+            set { _config.EnableUploadNotification = value; Save(); }
         }
 
         private void Load()

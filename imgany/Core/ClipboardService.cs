@@ -46,21 +46,47 @@ namespace imgany.Core
             return false;
         }
 
+        // Result: (MemoryStream of PNG, Suggested FileName)
+        public async Task<(MemoryStream, string)> GetClipboardImageStreamAsync(string prefix)
+        {
+             // Run on UI thread to access Clipboard, then offload encoding
+             // Actually Clipboard must be accessed on STA thread (UI thread OK).
+             if (Clipboard.ContainsImage())
+             {
+                 using (var image = Clipboard.GetImage())
+                 {
+                     if (image == null) return (null, null);
+                     
+                     // Deep clone to memory stream
+                     var ms = new MemoryStream();
+                     image.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+                     ms.Position = 0; // Rewind
+                     
+                     string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                     string filename = $"{prefix}_{timestamp}.png";
+                     
+                     return (ms, filename);
+                 }
+             }
+             return (null, null);
+        }
+
         public async Task<string> SaveImageFromClipboardAsync(string targetFolder)
         {
             try
             {
-                if (Clipboard.ContainsImage())
+                var (stream, filename) = await GetClipboardImageStreamAsync(_config.FilePrefix);
+                if (stream != null)
                 {
-                    using (var image = Clipboard.GetImage())
+                    using (stream)
                     {
-                        if (image == null) return null;
-                        
-                        // Uses the new Timestamp logic automatically
-                        string filename = GenerateNextFilename(targetFolder, _config.FilePrefix, "png");
+                        filename = EnsureUnique(targetFolder, filename);
                         string fullPath = Path.Combine(targetFolder, filename);
                         
-                        image.Save(fullPath, System.Drawing.Imaging.ImageFormat.Png);
+                        using (var fs = File.Create(fullPath))
+                        {
+                            await stream.CopyToAsync(fs);
+                        }
                         return fullPath;
                     }
                 }
@@ -70,6 +96,22 @@ namespace imgany.Core
                 Debug.WriteLine($"Save Image Error: {ex.Message}");
             }
             return null;
+        }
+
+        private string EnsureUnique(string folder, string filename)
+        {
+             string fullPath = Path.Combine(folder, filename);
+             if (!File.Exists(fullPath)) return filename;
+             
+             string nameNoExt = Path.GetFileNameWithoutExtension(filename);
+             string ext = Path.GetExtension(filename);
+             int index = 1;
+             while(true)
+             {
+                 string newName = $"{nameNoExt}_{index}{ext}";
+                 if (!File.Exists(Path.Combine(folder, newName))) return newName;
+                 index++;
+             }
         }
 
         public async Task<string> DownloadAndSaveImageAsync(string url, string targetFolder)
