@@ -27,7 +27,7 @@ namespace imgany.UI
 
         private void InitializeComponent()
         {
-            this.Text = "管理常用位置";
+            this.Text = "管理自动保存路径";
             this.Size = new Size(400, 300); // Further Reduced size
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;

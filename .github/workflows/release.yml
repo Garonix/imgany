@@ -1,0 +1,104 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Generate App Icon
+      shell: pwsh
+      run: |
+        Add-Type -AssemblyName System.Drawing
+        
+        $bitmap = New-Object System.Drawing.Bitmap(256, 256)
+        $g = [System.Drawing.Graphics]::FromImage($bitmap)
+        $g.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
+        
+        # Blue background
+        $brush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(30, 144, 255))
+        $g.FillRectangle($brush, 0, 0, 256, 256)
+        
+        # White clipboard
+        $pen = New-Object System.Drawing.Pen([System.Drawing.Color]::White, 12)
+        $g.DrawRectangle($pen, 50, 70, 156, 160)
+        
+        # Clipboard clip
+        $whiteBrush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::White)
+        $g.FillRectangle($whiteBrush, 90, 50, 76, 40)
+        
+        # Image icon (mountain)
+        $points = @(
+          (New-Object System.Drawing.Point(70, 200)),
+          (New-Object System.Drawing.Point(128, 130)),
+          (New-Object System.Drawing.Point(186, 200))
+        )
+        $g.FillPolygon($whiteBrush, $points)
+        
+        # Sun
+        $g.FillEllipse($whiteBrush, 150, 100, 35, 35)
+        
+        $g.Dispose()
+        
+        # Save as ICO
+        $ms = New-Object System.IO.MemoryStream
+        
+        # ICO header
+        $ms.WriteByte(0); $ms.WriteByte(0)  # Reserved
+        $ms.WriteByte(1); $ms.WriteByte(0)  # Type: Icon
+        $ms.WriteByte(1); $ms.WriteByte(0)  # Count: 1
+        
+        # Directory entry
+        $ms.WriteByte(0)   # Width 256
+        $ms.WriteByte(0)   # Height 256
+        $ms.WriteByte(0)   # Colors
+        $ms.WriteByte(0)   # Reserved
+        $ms.WriteByte(1); $ms.WriteByte(0)  # Planes
+        $ms.WriteByte(32); $ms.WriteByte(0) # BPP
+        
+        # Get PNG data
+        $pngMs = New-Object System.IO.MemoryStream
+        $bitmap.Save($pngMs, [System.Drawing.Imaging.ImageFormat]::Png)
+        $pngData = $pngMs.ToArray()
+        
+        # Size and offset
+        $sizeBytes = [BitConverter]::GetBytes($pngData.Length)
+        $ms.Write($sizeBytes, 0, 4)
+        $offsetBytes = [BitConverter]::GetBytes(22)
+        $ms.Write($offsetBytes, 0, 4)
+        
+        # PNG data
+        $ms.Write($pngData, 0, $pngData.Length)
+        
+        # Ensure directory exists
+        New-Item -ItemType Directory -Force -Path "imgany/Resources" | Out-Null
+        
+        [System.IO.File]::WriteAllBytes("imgany/Resources/app.ico", $ms.ToArray())
+        
+        $bitmap.Dispose()
+        Write-Host "Icon generated successfully"
+
+    - name: Publish
+      run: |
+        dotnet publish imgany/imgany.csproj -c Release -r win-x64 --self-contained false -o ./publish
+        Compress-Archive -Path ./publish/* -DestinationPath ./imgany.zip
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: ./imgany.zip
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

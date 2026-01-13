@@ -24,7 +24,10 @@ A Windows system tray clipboard image processing tool with auto-save, image host
 ## System Requirements
 
 - Windows 10/11
-- .NET 10.0 or higher
+- .NET 10.0 Desktop Runtime or higher
+
+> **⚠️ Please install .NET Runtime before first run**  
+> Download: [.NET 10.0 Desktop Runtime (Windows x64)](https://dotnet.microsoft.com/download/dotnet/10.0)
 
 ## Installation
 

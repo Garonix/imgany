@@ -1,5 +1,6 @@
 using imgany.Core;
 using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.Windows.Forms;
 using imgany.UI;
@@ -83,7 +84,7 @@ namespace imgany
             _contextMenu.Items.Add(_uploadMenuItem);
 
             // New: Favorite Paths Submenu (Dynamic)
-            _favoritesMenuItem = new ToolStripMenuItem("常用位置");
+            _favoritesMenuItem = new ToolStripMenuItem("自动保存路径");
             _favoritesMenuItem.Visible = _config.AutoSave; // Initial state
             _favoritesMenuItem.DropDownOpening += (s, e) => {
                 _favoritesMenuItem.DropDownItems.Clear();
@@ -92,7 +93,7 @@ namespace imgany
 
                 if (_config.FavoritePaths.Count == 0)
                 {
-                    _favoritesMenuItem.DropDownItems.Add(new ToolStripMenuItem("无常用位置") { Enabled = false });
+                    _favoritesMenuItem.DropDownItems.Add(new ToolStripMenuItem("无自动保存路径") { Enabled = false });
                     return;
                 }
 
@@ -119,6 +120,7 @@ namespace imgany
             };
             
             _contextMenu.Items.Add(new ToolStripSeparator());
+            _contextMenu.Items.Add("关于", null, OnAbout);
             _contextMenu.Items.Add("退出", null, OnExit);
 
             _trayIcon = new NotifyIcon()
@@ -407,6 +409,14 @@ namespace imgany
                     _autoSaveMenuItem.Checked = _config.AutoSave;
                     _uploadMenuItem.Checked = _config.UploadToHost;
                 }
+            }
+        }
+
+        private void OnAbout(object sender, EventArgs e)
+        {
+            using (var dialog = new AboutDialog())
+            {
+                dialog.ShowDialog();
             }
         }
 
