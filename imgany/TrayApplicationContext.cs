@@ -255,8 +255,9 @@ namespace imgany
                     });
                     
                     // Task 2: Upload (if enabled)
+                    // New Rule: If AutoSave (Auto Mode) is ON, we DO NOT upload on Paste.
                     Task<string> uploadTask = Task.FromResult<string>(null);
-                    if (_config.UploadToHost)
+                    if (_config.UploadToHost && !_config.AutoSave)
                     {
                         var uploadStream = new MemoryStream(data); // New stream for upload
                         uploadTask = _uploader.UploadImageAsync(uploadStream, fileName);
@@ -278,7 +279,7 @@ namespace imgany
                 // Download must happen first before we can save or upload
                 savedPath = await _clipboard.DownloadAndSaveImageAsync(url, path);
                 
-                if (savedPath != null && _config.UploadToHost)
+                if (savedPath != null && _config.UploadToHost && !_config.AutoSave)
                 {
                     remoteUrl = await _uploader.UploadImageAsync(savedPath);
                 }
@@ -302,9 +303,9 @@ namespace imgany
                         _trayIcon.ShowBalloonTip(2000, "上传成功", "图片链接已复制到剪贴板", ToolTipIcon.Info);
                     }
                 }
-                else if (_config.UploadToHost)
+                else if (_config.UploadToHost && !_config.AutoSave)
                 {
-                     // Upload enabled but failed
+                     // Upload enabled but failed (and we didn't skip it due to AutoSave)
                      if (_config.EnableUploadNotification)
                      {
                          _trayIcon.ShowBalloonTip(3000, "上传失败", "请检查网络或Token设置", ToolTipIcon.Error);
