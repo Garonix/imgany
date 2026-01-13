@@ -19,7 +19,6 @@ namespace imgany.UI
         public PathManagerForm(ConfigManager config)
         {
             _config = config;
-            // Clone dictionary to avoid direct modification until Save
             _paths = new Dictionary<string, string>(_config.FavoritePaths);
             InitializeComponent();
             RefreshList();
@@ -28,92 +27,192 @@ namespace imgany.UI
         private void InitializeComponent()
         {
             this.Text = "管理常用路径";
-            this.Size = new Size(400, 300); // Further Reduced size
+            this.AutoScaleMode = AutoScaleMode.Dpi;
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
+            this.AutoSize = true;
+            this.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            this.Padding = new Padding(15);
+            this.MinimumSize = new Size(450, 320);
 
-            int padding = 10;
-            int y = 10;
-            int grpW = 360;
+            // Main Layout Container
+            var mainLayout = new TableLayoutPanel
+            {
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                ColumnCount = 1,
+                Dock = DockStyle.Fill,
+                MinimumSize = new Size(410, 0)
+            };
+            mainLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Input group
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F)); // List
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Buttons
 
-            // Input Area
-            var grpInput = new GroupBox { Text = "新增/修改", Location = new Point(padding, y), Size = new Size(grpW, 100) };
-            
-            int row1 = 25;
-            int row2 = 60;
-            int inputX = 55;
-            int btnW_Add = 60; // Standardized
-            int btnW_Browse = 60; // Standardized
-            int rightMargin = grpW - 10;
+            // ============================================
+            // Input Group
+            // ============================================
+            var grpInput = new GroupBox 
+            { 
+                Text = "新增/修改", 
+                ForeColor = Color.Gray,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                Dock = DockStyle.Fill,
+                Margin = new Padding(0, 0, 0, 10),
+                MinimumSize = new Size(410, 0)
+            };
 
-            // Row 1: Alias
-            var lblAlias = new Label { Text = "别名:", Location = new Point(10, row1+3), AutoSize = true };
-            
-            // Align Add button to right
-            int btnAddX = rightMargin - btnW_Add;
-            var btnAdd = new Button { Text = "添加", Location = new Point(btnAddX, row1-1), Width = btnW_Add, Height = 25 };
+            var inputLayout = new TableLayoutPanel
+            {
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                ColumnCount = 3,
+                Dock = DockStyle.Fill,
+                Padding = new Padding(10),
+                ForeColor = SystemColors.ControlText
+            };
+            inputLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            inputLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            inputLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+
+            // Row 0: Alias
+            var lblAlias = new Label 
+            { 
+                Text = "别名:", 
+                AutoSize = true,
+                Anchor = AnchorStyles.Left,
+                Margin = new Padding(0, 0, 10, 0)
+            };
+            _txtAlias = new TextBox 
+            { 
+                Dock = DockStyle.Fill,
+                PlaceholderText = "例如: 工作目录",
+                Margin = new Padding(0, 3, 10, 3)
+            };
+            var btnAdd = new Button 
+            { 
+                Text = "添加", 
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                MinimumSize = new Size(70, 0),
+                Margin = new Padding(0, 3, 0, 3)
+            };
             btnAdd.Click += OnAdd;
 
-            // Alias Txt fills space
-            int aliasW = btnAddX - 10 - inputX;
-            _txtAlias = new TextBox { Location = new Point(inputX, row1), Width = aliasW, PlaceholderText = "例如: 工作目录" };
-            
-            // Row 2: Path
-            var lblPath = new Label { Text = "路径:", Location = new Point(10, row2+3), AutoSize = true };
-            
-            // Align Browse button to right (same right edge as Add)
-            int btnBrowseX = rightMargin - btnW_Browse;
-            var btnBrowse = new Button { Text = "浏览", Location = new Point(btnBrowseX, row2-1), Width = btnW_Browse, Height = 25 };
+            inputLayout.Controls.Add(lblAlias, 0, 0);
+            inputLayout.Controls.Add(_txtAlias, 1, 0);
+            inputLayout.Controls.Add(btnAdd, 2, 0);
+
+            // Row 1: Path
+            var lblPath = new Label 
+            { 
+                Text = "路径:", 
+                AutoSize = true,
+                Anchor = AnchorStyles.Left,
+                Margin = new Padding(0, 0, 10, 0)
+            };
+            _txtPath = new TextBox 
+            { 
+                Dock = DockStyle.Fill,
+                PlaceholderText = "D:\\Images",
+                Margin = new Padding(0, 3, 10, 3)
+            };
+            var btnBrowse = new Button 
+            { 
+                Text = "浏览", 
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                MinimumSize = new Size(70, 0),
+                Margin = new Padding(0, 3, 0, 3)
+            };
             btnBrowse.Click += (s, e) => 
             {
                 using (var fbd = new FolderBrowserDialog())
                 {
-                    if (fbd.ShowDialog() == DialogResult.OK) _txtPath.Text = fbd.SelectedPath;
+                    if (fbd.ShowDialog() == DialogResult.OK) 
+                        _txtPath.Text = fbd.SelectedPath;
                 }
             };
-            
-            // Path Txt fills space (Same width as Alias)
-            int pathW = btnBrowseX - 10 - inputX;
-            _txtPath = new TextBox { Location = new Point(inputX, row2), Width = pathW, PlaceholderText = "D:\\Images" };
-            
-            grpInput.Controls.Add(lblAlias);
-            grpInput.Controls.Add(_txtAlias);
-            grpInput.Controls.Add(lblPath);
-            grpInput.Controls.Add(_txtPath);
-            grpInput.Controls.Add(btnBrowse);
-            grpInput.Controls.Add(btnAdd);
 
-            this.Controls.Add(grpInput);
-            
-            y += 105;
+            inputLayout.Controls.Add(lblPath, 0, 1);
+            inputLayout.Controls.Add(_txtPath, 1, 1);
+            inputLayout.Controls.Add(btnBrowse, 2, 1);
 
-            // List Area
-            _lstPaths = new ListBox { Location = new Point(padding, y), Size = new Size(grpW, 105) };
+            grpInput.Controls.Add(inputLayout);
+            mainLayout.Controls.Add(grpInput, 0, 0);
+
+            // ============================================
+            // List Box
+            // ============================================
+            _lstPaths = new ListBox 
+            { 
+                Dock = DockStyle.Fill,
+                Margin = new Padding(0, 0, 0, 10),
+                Height = 120
+            };
             _lstPaths.SelectedIndexChanged += OnSelectionChanged;
-            this.Controls.Add(_lstPaths);
+            mainLayout.Controls.Add(_lstPaths, 0, 1);
 
-            y += 115;
+            // ============================================
+            // Button Panel
+            // ============================================
+            var buttonPanel = new TableLayoutPanel
+            {
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                ColumnCount = 4,
+                Dock = DockStyle.Fill
+            };
+            buttonPanel.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            buttonPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F)); // Spacer
+            buttonPanel.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            buttonPanel.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
 
-            // Buttons (Bottom) using Anchor logic mostly or absolute
-            // Remove: Left (Field)
-            _btnRemove = new Button { Text = "删除", Location = new Point(padding, y), Width = 70, Enabled = false };
+            _btnRemove = new Button 
+            { 
+                Text = "删除", 
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                MinimumSize = new Size(70, 0),
+                Enabled = false,
+                Margin = new Padding(0)
+            };
             _btnRemove.Click += OnRemove;
-            
-            // Save/Cancel: Right
-            int btnActionW = 70;
-            int btnCancelX = padding + grpW - btnActionW;
-            int btnSaveX = btnCancelX - 10 - btnActionW;
 
-            var btnSave = new Button { Text = "保存", Location = new Point(btnSaveX, y), DialogResult = DialogResult.OK, Width = btnActionW };
+            var btnSave = new Button 
+            { 
+                Text = "保存", 
+                DialogResult = DialogResult.OK,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                MinimumSize = new Size(70, 0),
+                Margin = new Padding(0, 0, 10, 0)
+            };
             btnSave.Click += OnSave;
             
-            var btnCancel = new Button { Text = "取消", Location = new Point(btnCancelX, y), DialogResult = DialogResult.Cancel, Width = btnActionW };
+            var btnCancel = new Button 
+            { 
+                Text = "取消", 
+                DialogResult = DialogResult.Cancel,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                MinimumSize = new Size(70, 0),
+                Margin = new Padding(0)
+            };
 
-            this.Controls.Add(_btnRemove);
-            this.Controls.Add(btnSave);
-            this.Controls.Add(btnCancel);
+            buttonPanel.Controls.Add(_btnRemove, 0, 0);
+            buttonPanel.Controls.Add(new Panel { Dock = DockStyle.Fill }, 1, 0); // Spacer
+            buttonPanel.Controls.Add(btnSave, 2, 0);
+            buttonPanel.Controls.Add(btnCancel, 3, 0);
+
+            mainLayout.Controls.Add(buttonPanel, 0, 2);
+
+            this.Controls.Add(mainLayout);
+            this.AcceptButton = btnSave;
+            this.CancelButton = btnCancel;
         }
 
         private void RefreshList()
@@ -148,7 +247,6 @@ namespace imgany.UI
             _paths[alias] = path;
             RefreshList();
             
-            // Clear inputs
             _txtAlias.Text = "";
             _txtPath.Text = "";
         }
@@ -157,7 +255,6 @@ namespace imgany.UI
         {
             if (_lstPaths.SelectedIndex < 0) return;
 
-            // Parse alias from string "Alias -> Path"
             string item = _lstPaths.SelectedItem.ToString();
             string alias = item.Split(new[] { "  ->" }, StringSplitOptions.None)[0].Trim();
 
@@ -170,20 +267,19 @@ namespace imgany.UI
         
         private void OnSelectionChanged(object sender, EventArgs e)
         {
-             bool hasSelection = _lstPaths.SelectedIndex >= 0;
-             if (_btnRemove != null) _btnRemove.Enabled = hasSelection;
+            bool hasSelection = _lstPaths.SelectedIndex >= 0;
+            if (_btnRemove != null) _btnRemove.Enabled = hasSelection;
 
-             if (hasSelection)
-             {
-                  string item = _lstPaths.SelectedItem.ToString();
-                   // Simple parse assuming separator format logic
-                  var parts = item.Split(new[] { "  ->" }, StringSplitOptions.None);
-                  if (parts.Length > 0)
-                  {
-                      _txtAlias.Text = parts[0].Trim();
-                      if (parts.Length > 1) _txtPath.Text = parts[1].Trim();
-                  }
-             }
+            if (hasSelection)
+            {
+                string item = _lstPaths.SelectedItem.ToString();
+                var parts = item.Split(new[] { "  ->" }, StringSplitOptions.None);
+                if (parts.Length > 0)
+                {
+                    _txtAlias.Text = parts[0].Trim();
+                    if (parts.Length > 1) _txtPath.Text = parts[1].Trim();
+                }
+            }
         }
 
         private void OnSave(object sender, EventArgs e)

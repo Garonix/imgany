@@ -12,6 +12,9 @@ namespace imgany
         [STAThread]
         static void Main()
         {
+            // Enable high DPI support - must be called before any other Application methods
+            Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
+            
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 

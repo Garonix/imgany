@@ -29,6 +29,11 @@ namespace imgany.UI
         private Button _btnManage;
         private Button _btnBrowse;
 
+        // Layout Containers
+        private GroupBox grpHost;
+        private GroupBox grpAuto;
+        private TableLayoutPanel mainLayout;
+
         public SettingsForm(ConfigManager config)
         {
             _config = config;
@@ -39,7 +44,7 @@ namespace imgany.UI
         private void ToggleAutoSaveControls()
         {
             grpAuto.Visible = _chkAutoSave.Checked;
-            ToggleHostControls(); // Cascade update
+            ToggleHostControls();
         }
 
         private void RefreshFavoritePaths()
@@ -79,31 +84,7 @@ namespace imgany.UI
 
         private void ToggleHostControls()
         {
-            // Logic: Host Group Visibility depends on Upload Checkbox
             grpHost.Visible = _chkUpload.Checked;
-
-            // Responsive Layout: Calculate positions based on visibility
-            int padding = 15;
-            int baseY = 120; // After General group (y=20 + height=90 + gap=10)
-            
-            int currentY = baseY;
-            
-            // Auto group positioning
-            if (_chkAutoSave.Checked)
-            {
-                grpAuto.Location = new Point(padding, currentY);
-                currentY += 115; // grpAuto height (95) + gap (20)
-            }
-            
-            // Host group positioning (if visible)
-            if (_chkUpload.Checked)
-            {
-                grpHost.Location = new Point(padding, currentY);
-                currentY += 220; // grpHost height (200) + gap (20)
-            }
-            
-            // Form height = currentY + buttons area (80 = 20px gap + 60px buttons)
-            this.Size = new Size(450, currentY + 80);
 
             bool uploadEnabled = _chkUpload.Checked;
             
@@ -118,152 +99,394 @@ namespace imgany.UI
 
             _chkNotify.Enabled = uploadEnabled;
 
-            // Logic: UploadOnly requires BOTH "Auto Save" AND "Upload" to be enabled.
             bool canUseUploadOnly = _chkAutoSave.Checked && uploadEnabled;
             
             _chkUploadOnly.Enabled = canUseUploadOnly; 
             if (!canUseUploadOnly) _chkUploadOnly.Checked = false; 
         }
 
-        private GroupBox grpHost; // Make class level for visibility toggle
-        private GroupBox grpAuto; // Visibility controlled by ToggleAutoSaveControls
-
         private void InitializeComponent()
         {
             this.Text = "设置";
-            this.Size = new Size(450, 600); // Height increased
+            this.AutoScaleMode = AutoScaleMode.Dpi;
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
+            this.AutoSize = true;
+            this.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            this.Padding = new Padding(15);
+            this.MinimumSize = new Size(480, 200); // 确保最小宽度
 
-            int padding = 15;
-            int y = 20;
+            // Main Layout Container
+            mainLayout = new TableLayoutPanel
+            {
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                ColumnCount = 1,
+                Dock = DockStyle.Fill,
+                MinimumSize = new Size(440, 0) // 内容区域最小宽度
+            };
+            mainLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
 
+            // ============================================
             // Group 1: General Settings
-            var grpGeneral = new GroupBox { Text = "通用设置", Location = new Point(padding, y), Size = new Size(400, 90) };
-            
-            // Row 1: Startup (Left) | Auto Mode (Center) | Upload (Right)
-            var chkStartup = new CheckBox { Text = "开机自启", Location = new Point(20, 25), AutoSize = true };
+            // ============================================
+            var grpGeneral = new GroupBox 
+            { 
+                Text = "通用设置", 
+                ForeColor = Color.Gray,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                Dock = DockStyle.Fill,
+                Margin = new Padding(0, 0, 0, 10),
+                MinimumSize = new Size(440, 0)
+            };
+
+            var generalLayout = new TableLayoutPanel
+            {
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                ColumnCount = 2,
+                Dock = DockStyle.Fill,
+                Padding = new Padding(10),
+                ForeColor = SystemColors.ControlText
+            };
+            generalLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            generalLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+
+            // Row 0: Checkboxes - use FlowLayoutPanel for horizontal alignment
+            var checkboxPanel = new FlowLayoutPanel
+            {
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                FlowDirection = FlowDirection.LeftToRight,
+                Margin = new Padding(0, 0, 0, 5),
+                WrapContents = false
+            };
+
+            var chkStartup = new CheckBox 
+            { 
+                Text = "开机自启", 
+                AutoSize = true,
+                Margin = new Padding(0, 0, 25, 0)
+            };
             chkStartup.Checked = _config.StartUpOnLogon;
             chkStartup.CheckedChanged += (s, e) => _config.StartUpOnLogon = chkStartup.Checked;
             
-            _chkAutoSave = new CheckBox { Text = "自动模式", Location = new Point(150, 25), AutoSize = true }; // Center
-            _chkAutoSave.CheckedChanged += (s, e) => 
+            _chkAutoSave = new CheckBox 
+            { 
+                Text = "自动模式", 
+                AutoSize = true,
+                Margin = new Padding(0, 0, 25, 0)
+            };
+            _chkAutoSave.CheckedChanged += (s, e) => ToggleAutoSaveControls();
+            
+            _chkUpload = new CheckBox 
+            { 
+                Text = "上传图床", 
+                AutoSize = true,
+                Margin = new Padding(0)
+            };
+            _chkUpload.CheckedChanged += (s, e) => ToggleHostControls();
+
+            checkboxPanel.Controls.Add(chkStartup);
+            checkboxPanel.Controls.Add(_chkAutoSave);
+            checkboxPanel.Controls.Add(_chkUpload);
+
+            generalLayout.Controls.Add(checkboxPanel, 0, 0);
+            generalLayout.SetColumnSpan(checkboxPanel, 2);
+
+            // Row 1: Prefix - aligned row
+            var lblPrefix = new Label 
+            { 
+                Text = "文件名前缀:", 
+                AutoSize = true,
+                Anchor = AnchorStyles.Left,
+                Margin = new Padding(0, 0, 10, 0)
+            };
+            _txtPrefix = new TextBox 
+            { 
+                Dock = DockStyle.Fill,
+                Margin = new Padding(0, 3, 0, 3)
+            };
+
+            generalLayout.Controls.Add(lblPrefix, 0, 1);
+            generalLayout.Controls.Add(_txtPrefix, 1, 1);
+
+            grpGeneral.Controls.Add(generalLayout);
+            mainLayout.Controls.Add(grpGeneral, 0, 0);
+
+            // ============================================
+            // Group 2: Auto Mode Settings
+            // ============================================
+            grpAuto = new GroupBox 
+            { 
+                Text = "自动模式设置", 
+                ForeColor = Color.Gray,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                Dock = DockStyle.Fill,
+                Margin = new Padding(0, 0, 0, 10),
+                MinimumSize = new Size(440, 0)
+            };
+
+            var autoLayout = new TableLayoutPanel
             {
-                ToggleAutoSaveControls();
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                ColumnCount = 3,
+                Dock = DockStyle.Fill,
+                Padding = new Padding(10),
+                ForeColor = SystemColors.ControlText
             };
-            
-            _chkUpload = new CheckBox { Text = "上传图床", Location = new Point(290, 25), AutoSize = true }; // Right
-            _chkUpload.CheckedChanged += (s, e) => {
-                 ToggleHostControls();
+            autoLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            autoLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            autoLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+
+            // Row 0: Favorite Paths
+            var lblFav = new Label 
+            { 
+                Text = "常用路径:", 
+                AutoSize = true,
+                Anchor = AnchorStyles.Left,
+                Margin = new Padding(0, 0, 10, 0)
             };
-            
-            var lblPrefix = new Label { Text = "文件名前缀:", Location = new Point(20, 55), AutoSize = true };
-            _txtPrefix = new TextBox { Location = new Point(100, 52), Width = 270 };
-
-            grpGeneral.Controls.Add(chkStartup);
-            grpGeneral.Controls.Add(_chkAutoSave);
-            grpGeneral.Controls.Add(_chkUpload);
-            grpGeneral.Controls.Add(lblPrefix);
-            grpGeneral.Controls.Add(_txtPrefix);
-            
-            this.Controls.Add(grpGeneral);
-
-            y += 100;
-
-            // Group 2: Auto Mode Settings (No checkbox here anymore)
-            grpAuto = new GroupBox { Text = "自动模式设置", Location = new Point(padding, y), Size = new Size(400, 95) };
-
-            // Favorite Paths UI
-            var lblFav = new Label { Text = "常用路径:", Location = new Point(20, 25), AutoSize = true };
-            
-            _cmbFavoritePaths = new ComboBox { Location = new Point(90, 22), Width = 230, DropDownStyle = ComboBoxStyle.DropDownList };
+            _cmbFavoritePaths = new ComboBox 
+            { 
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                Dock = DockStyle.Fill,
+                Margin = new Padding(0, 3, 10, 3)
+            };
             _cmbFavoritePaths.Items.Add("-- 请选择 --");
             _cmbFavoritePaths.SelectedIndex = 0;
             _cmbFavoritePaths.SelectedIndexChanged += OnFavoritePathSelected;
             
-            _btnManage = new Button { Text = "管理", Location = new Point(330, 21), Width = 40 };
+            _btnManage = new Button 
+            { 
+                Text = "管理", 
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                MinimumSize = new Size(70, 0),
+                Margin = new Padding(0, 3, 0, 3)
+            };
             _btnManage.Click += OnManagePaths;
 
-            var lblPath = new Label { Text = "保存路径:", Location = new Point(20, 55), AutoSize = true };
-            _txtAutoSavePath = new TextBox { Location = new Point(90, 52), Width = 230 };
-            _btnBrowse = new Button { Text = "浏览", Location = new Point(330, 51), Width = 40 };
+            autoLayout.Controls.Add(lblFav, 0, 0);
+            autoLayout.Controls.Add(_cmbFavoritePaths, 1, 0);
+            autoLayout.Controls.Add(_btnManage, 2, 0);
+
+            // Row 1: Save Path
+            var lblPath = new Label 
+            { 
+                Text = "保存路径:", 
+                AutoSize = true,
+                Anchor = AnchorStyles.Left,
+                Margin = new Padding(0, 0, 10, 0)
+            };
+            _txtAutoSavePath = new TextBox 
+            { 
+                Dock = DockStyle.Fill,
+                Margin = new Padding(0, 3, 10, 3)
+            };
+            _btnBrowse = new Button 
+            { 
+                Text = "浏览", 
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                MinimumSize = new Size(70, 0),
+                Margin = new Padding(0, 3, 0, 3)
+            };
             _btnBrowse.Click += OnBrowsePath;
             
-            grpAuto.Controls.Add(lblFav);
-            grpAuto.Controls.Add(_cmbFavoritePaths);
-            grpAuto.Controls.Add(_btnManage);
-            grpAuto.Controls.Add(lblPath);
-            grpAuto.Controls.Add(_txtAutoSavePath);
-            grpAuto.Controls.Add(_btnBrowse);
+            autoLayout.Controls.Add(lblPath, 0, 1);
+            autoLayout.Controls.Add(_txtAutoSavePath, 1, 1);
+            autoLayout.Controls.Add(_btnBrowse, 2, 1);
 
-            this.Controls.Add(grpAuto);
+            grpAuto.Controls.Add(autoLayout);
+            mainLayout.Controls.Add(grpAuto, 0, 1);
 
-            y += 115; // Adjusted for compact Auto group
-
-            // Group 3: Image Host (图床设置)
-            grpHost = new GroupBox { Text = "图床设置", Location = new Point(padding, y), Size = new Size(400, 200) };
-            
-            // Feature: Upload Only (Moved to Top)
-            _chkUploadOnly = new CheckBox { Text = "仅上传模式 (不保存本地)", Location = new Point(20, 25), AutoSize = true };
-            _chkNotify = new CheckBox { Text = "上传结果通知", Location = new Point(240, 25), AutoSize = true };
-
-            var lblType = new Label { Text = "图床类型:", Location = new Point(20, 55), AutoSize = true };
-            _cmbHostType = new ComboBox { Location = new Point(90, 52), Width = 280, DropDownStyle = ComboBoxStyle.DropDownList }; // Standardized width
-            _cmbHostType.Items.Add("Lsky Pro (兰空图床)");
-            _cmbHostType.SelectedIndex = 0; // Default
-            
-            // ... (rest of controls)
-
-            var lblHost = new Label { Text = "图床域名:", Location = new Point(20, 85), AutoSize = true };
-            _txtHostUrl = new TextBox { Location = new Point(90, 82), Width = 280, PlaceholderText = "https://example.com" };
-
-            // Auth Section
-            _chkGuest = new CheckBox { Text = "游客上传(需服务端支持)", Location = new Point(90, 110), AutoSize = true };
-            _chkGuest.CheckedChanged += (s, e) => {
-                ToggleHostControls();
+            // ============================================
+            // Group 3: Image Host Settings
+            // ============================================
+            grpHost = new GroupBox 
+            { 
+                Text = "图床设置", 
+                ForeColor = Color.Gray,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                Dock = DockStyle.Fill,
+                Margin = new Padding(0, 0, 0, 10),
+                MinimumSize = new Size(440, 0)
             };
 
-            var lblEmail = new Label { Text = "邮箱:", Location = new Point(20, 140), AutoSize = true };
-            _txtEmail = new TextBox { Location = new Point(90, 137), Width = 280, PlaceholderText = "user@example.com" };
+            var hostLayout = new TableLayoutPanel
+            {
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                ColumnCount = 2,
+                Dock = DockStyle.Fill,
+                Padding = new Padding(10),
+                ForeColor = SystemColors.ControlText
+            };
+            hostLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            hostLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
 
-            var lblPwd = new Label { Text = "密码:", Location = new Point(20, 170), AutoSize = true };
-            _txtPassword = new TextBox { Location = new Point(90, 167), Width = 280, UseSystemPasswordChar = true };
+            // Row 0: Upload Options - use FlowLayoutPanel
+            var uploadOptionsPanel = new FlowLayoutPanel
+            {
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                FlowDirection = FlowDirection.LeftToRight,
+                Margin = new Padding(0, 0, 0, 5),
+                WrapContents = false
+            };
 
-            grpHost.Controls.Add(_chkUploadOnly); // Added at top
-            grpHost.Controls.Add(lblType);
-            grpHost.Controls.Add(_cmbHostType);
-            grpHost.Controls.Add(lblHost);
-            grpHost.Controls.Add(_txtHostUrl);
-            grpHost.Controls.Add(_chkGuest);
-            grpHost.Controls.Add(lblEmail);
-            grpHost.Controls.Add(_txtEmail);
-            grpHost.Controls.Add(lblPwd);
-            grpHost.Controls.Add(_txtPassword);
-            grpHost.Controls.Add(_chkNotify);
+            _chkUploadOnly = new CheckBox 
+            { 
+                Text = "仅上传模式 (不保存本地)", 
+                AutoSize = true,
+                Margin = new Padding(0, 0, 25, 0)
+            };
+            _chkNotify = new CheckBox 
+            { 
+                Text = "上传结果通知", 
+                AutoSize = true,
+                Margin = new Padding(0)
+            };
+
+            uploadOptionsPanel.Controls.Add(_chkUploadOnly);
+            uploadOptionsPanel.Controls.Add(_chkNotify);
+
+            hostLayout.Controls.Add(uploadOptionsPanel, 0, 0);
+            hostLayout.SetColumnSpan(uploadOptionsPanel, 2);
+
+            // Row 1: Host Type
+            var lblType = new Label 
+            { 
+                Text = "图床类型:", 
+                AutoSize = true,
+                Anchor = AnchorStyles.Left,
+                Margin = new Padding(0, 0, 10, 0)
+            };
+            _cmbHostType = new ComboBox 
+            { 
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                Dock = DockStyle.Fill,
+                Margin = new Padding(0, 3, 0, 3)
+            };
+            _cmbHostType.Items.Add("Lsky Pro (兰空图床)");
+            _cmbHostType.SelectedIndex = 0;
             
-            this.Controls.Add(grpHost);
+            hostLayout.Controls.Add(lblType, 0, 1);
+            hostLayout.Controls.Add(_cmbHostType, 1, 1);
 
-            // Buttons (Adjust Position) - Dynamic position handled by FlowLayoutPanel or simpler anchor?
-            // Since we resize form, we should anchor buttons to bottom right.
-            var btnSave = new Button { Text = "保存" }; // No DialogResult here - set in OnSave after validation
-             // Manual positioning relative to form bottom
-             // We'll update button locations in ToggleHostControls or just anchor them.
-             
-             // Let's stick to absolute for now and update in Toggle if needed, OR just anchor.
-             btnSave.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-             btnSave.Location = new Point(250, 520); // Initial
-             
-             var btnCancel = new Button { Text = "取消", DialogResult = DialogResult.Cancel };
-             btnCancel.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-             btnCancel.Location = new Point(340, 520);
-            
-             // Override Click
-             btnSave.Click += OnSave;
+            // Row 2: Host URL
+            var lblHost = new Label 
+            { 
+                Text = "图床域名:", 
+                AutoSize = true,
+                Anchor = AnchorStyles.Left,
+                Margin = new Padding(0, 0, 10, 0)
+            };
+            _txtHostUrl = new TextBox 
+            { 
+                Dock = DockStyle.Fill,
+                PlaceholderText = "https://example.com",
+                Margin = new Padding(0, 3, 0, 3)
+            };
 
-            this.Controls.Add(btnSave);
-            this.Controls.Add(btnCancel);
+            hostLayout.Controls.Add(lblHost, 0, 2);
+            hostLayout.Controls.Add(_txtHostUrl, 1, 2);
+
+            // Row 3: Guest Mode
+            _chkGuest = new CheckBox 
+            { 
+                Text = "游客上传(需服务端支持)", 
+                AutoSize = true,
+                Margin = new Padding(0, 5, 0, 5)
+            };
+            _chkGuest.CheckedChanged += (s, e) => ToggleHostControls();
+
+            hostLayout.Controls.Add(_chkGuest, 1, 3);
+
+            // Row 4: Email
+            var lblEmail = new Label 
+            { 
+                Text = "邮箱:", 
+                AutoSize = true,
+                Anchor = AnchorStyles.Left,
+                Margin = new Padding(0, 0, 10, 0)
+            };
+            _txtEmail = new TextBox 
+            { 
+                Dock = DockStyle.Fill,
+                PlaceholderText = "user@example.com",
+                Margin = new Padding(0, 3, 0, 3)
+            };
+
+            hostLayout.Controls.Add(lblEmail, 0, 4);
+            hostLayout.Controls.Add(_txtEmail, 1, 4);
+
+            // Row 5: Password
+            var lblPwd = new Label 
+            { 
+                Text = "密码:", 
+                AutoSize = true,
+                Anchor = AnchorStyles.Left,
+                Margin = new Padding(0, 0, 10, 0)
+            };
+            _txtPassword = new TextBox 
+            { 
+                Dock = DockStyle.Fill,
+                UseSystemPasswordChar = true,
+                Margin = new Padding(0, 3, 0, 3)
+            };
+
+            hostLayout.Controls.Add(lblPwd, 0, 5);
+            hostLayout.Controls.Add(_txtPassword, 1, 5);
+
+            grpHost.Controls.Add(hostLayout);
+            mainLayout.Controls.Add(grpHost, 0, 2);
+
+            // ============================================
+            // Buttons Panel
+            // ============================================
+            var buttonPanel = new FlowLayoutPanel
+            {
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                FlowDirection = FlowDirection.RightToLeft,
+                Dock = DockStyle.Fill,
+                Margin = new Padding(0, 5, 0, 0)
+            };
+
+            var btnCancel = new Button 
+            { 
+                Text = "取消", 
+                DialogResult = DialogResult.Cancel,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                MinimumSize = new Size(80, 0),
+                Margin = new Padding(0)
+            };
+            var btnSave = new Button 
+            { 
+                Text = "保存",
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                MinimumSize = new Size(80, 0),
+                Margin = new Padding(0, 0, 10, 0)
+            };
+            btnSave.Click += OnSave;
+
+            buttonPanel.Controls.Add(btnCancel);
+            buttonPanel.Controls.Add(btnSave);
+            mainLayout.Controls.Add(buttonPanel, 0, 3);
+
+            this.Controls.Add(mainLayout);
+            this.AcceptButton = btnSave;
+            this.CancelButton = btnCancel;
         }
 
         private void LoadSettings()
@@ -274,7 +497,6 @@ namespace imgany.UI
             
             RefreshFavoritePaths();
             
-            // Logic sync
             ToggleAutoSaveControls();
 
             // Host
@@ -289,7 +511,6 @@ namespace imgany.UI
             _chkNotify.Checked = _config.EnableUploadNotification;
             _chkUploadOnly.Checked = _config.UploadOnly;
             
-            // Independent toggle
             ToggleHostControls(); 
         }
 
@@ -326,9 +547,6 @@ namespace imgany.UI
             _config.UploadHostUrl = _txtHostUrl.Text;
             
             _config.UploadAsGuest = _chkGuest.Checked;
-            _config.UploadEmail = _txtEmail.Text;
-            _config.UploadPassword = _txtPassword.Text;
-            
             _config.UploadEmail = _txtEmail.Text;
             _config.UploadPassword = _txtPassword.Text;
             
