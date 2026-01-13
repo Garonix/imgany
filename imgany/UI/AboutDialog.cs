@@ -17,6 +17,7 @@ namespace imgany.UI
         private void InitializeComponents()
         {
             this.Text = "关于 imgany";
+            this.AutoScaleMode = AutoScaleMode.Dpi;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;

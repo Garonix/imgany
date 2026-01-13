@@ -93,7 +93,7 @@ namespace imgany
 
                 if (_config.FavoritePaths.Count == 0)
                 {
-                    _favoritesMenuItem.DropDownItems.Add(new ToolStripMenuItem("无自动保存路径") { Enabled = false });
+                    _favoritesMenuItem.DropDownItems.Add(new ToolStripMenuItem("无常用路径") { Enabled = false });
                     return;
                 }
 

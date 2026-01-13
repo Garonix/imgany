@@ -176,7 +176,7 @@ namespace imgany.UI
             grpAuto = new GroupBox { Text = "自动模式设置", Location = new Point(padding, y), Size = new Size(400, 95) };
 
             // Favorite Paths UI
-            var lblFav = new Label { Text = "自动保存路径:", Location = new Point(20, 25), AutoSize = true };
+            var lblFav = new Label { Text = "常用路径:", Location = new Point(20, 25), AutoSize = true };
             
             _cmbFavoritePaths = new ComboBox { Location = new Point(90, 22), Width = 230, DropDownStyle = ComboBoxStyle.DropDownList };
             _cmbFavoritePaths.Items.Add("-- 请选择 --");
