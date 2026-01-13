@@ -48,5 +48,29 @@ namespace imgany.Core
         public static extern bool RemoveClipboardFormatListener(IntPtr hwnd);
 
         public const int WM_CLIPBOARDUPDATE = 0x031D;
+
+        // GUI Thread Info
+        [DllImport("user32.dll", SetLastError = true)]
+        public static extern bool GetGUIThreadInfo(uint idThread, ref GUITHREADINFO lpgui);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        public static extern bool IsChild(IntPtr hWndParent, IntPtr hWnd);
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct GUITHREADINFO
+        {
+            public int cbSize;
+            public int flags;
+            public IntPtr hwndActive;
+            public IntPtr hwndFocus;
+            public IntPtr hwndCapture;
+            public IntPtr hwndMenuOwner;
+            public IntPtr hwndMoveSize;
+            public IntPtr hwndCaret;
+            public System.Drawing.Rectangle rcCaret;
+        }
     }
 }
